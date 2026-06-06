@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimodal Pose Motion Analytics Lab / 多模态动捕数据终端</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0a0c10;
+            --panel-bg: #141822;
+            --accent-cyan: #00f2fe;
+            --accent-purple: #4facfe;
+            --accent-green: #00e676;
+            --text-main: #f0f3f8;
+            --text-dim: #7a889b;
+            --border: #222938;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* 左侧控制台（严格保持第一版暗黑实验室布局） */
+        .sidebar {
+            width: 320px;
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            z-index: 10;
+            overflow-y: auto;
+        }
+
+        .logo-area h1 {
+            font-size: 18px;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .logo-area p {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .control-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .card-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .upload-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.1), rgba(79, 172, 254, 0.1));
+            border: 1px dashed var(--accent-cyan);
+            color: var(--accent-cyan);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .upload-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(79, 172, 254, 0.2));
+        }
+
+        /* 下载与清理面板 */
+        .download-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-green);
+            border: none;
+            color: #000;
+            font-weight: bold;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .download-btn:disabled {
+            background: #222938;
+            color: var(--text-dim);
+            cursor: not-allowed;
+        }
+
+        .clear-btn {
+            width: 100%;
+            padding: 8px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ff4d4f;
+        }
+        .dot.active {
+            background-color: #52c41a;
+            box-shadow: 0 0 8px #52c41a;
+        }
+
+        /* 右侧主实验室视窗 */
+        .main-workspace {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: radial-gradient(var(--border) 1px, transparent 0);
+            background-size: 24px 24px;
+            padding: 20px;
+        }
+
+        .viewport-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        video { display: none; }
+        
+        /* 画布基础安全兜底尺寸，防止非对称塌陷 */
+        canvas { 
+            display: block; 
+            max-width: 100%; 
+            max-height: 85vh; 
+            object-fit: contain;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background-color: #000;
+            min-width: 320px;
+            min-height: 180px;
+        }
+
+        .empty-placeholder { text-align: center; color: var(--text-dim); }
+        .empty-placeholder svg { width: 64px; height: 64px; fill: currentColor; margin-bottom: 16px; opacity: 0.3; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo-area">
+            <h1>POSEMOTION AI</h1>
+            <p>多模态骨骼标注与坐标捕获终端</p>
+        </div>
+
+        <div class="control-card">
+            <div class="card-title">数据输入端 / Input Source</div>
+            <label class="upload-btn" for="videoUpload">📁 上传本地测试视频</label>
+            <input type="file" id="videoUpload" accept="video/*" style="display: none;">
+        </div>
+
+        <div class="control-card">
+            <div class="card-title">数据记录与导出 / Data Export</div>
+            <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 4px;">已捕获时间序列帧数：</div>
+            <div id="frameCount" style="font-size: 32px; font-weight: bold; color: var(--accent-green); font-family: monospace; margin-bottom: 12px;">0</div>
+            
+            <button class="download-btn" id="downloadCsvBtn" disabled>📥 下载关键点坐标 (.CSV)</button>
+            <button class="clear-btn" id="clearDataBtn">🧹 清除当前数据缓存</button>
+        </div>
+
+        <div class="control-card" style="margin-top: auto;">
+            <div class="status-indicator">
+                <div class="dot" id="statusDot"></div>
+                <span id="statusText" style="color: var(--text-dim);">模型引擎配置中...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-workspace">
+        <div class="empty-placeholder" id="placeholder">
+            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zM14 13h-3v3H9v-3H6v-2h3V8h2v3h3v2z"/></svg>
+            <p>请在左侧上传一段包含人体的运动视频</p>
+        </div>
+
+        <div class="viewport-container" id="viewportContainer">
+            <video id="inputVideo" playsinline muted loop></video>
+            <canvas id="outputCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('inputVideo');
+        const canvas = document.getElementById('outputCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const placeholder = document.getElementById('placeholder');
+        const viewportContainer = document.getElementById('viewportContainer');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        const frameCountEl = document.getElementById('frameCount');
+        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+        const clearDataBtn = document.getElementById('clearDataBtn');
+
+        let capturedDataset = [];
+        let isEngineReady = false;
+        let isProcessing = false; // 核心防爆死锁互斥锁
+        let animationFrameId = null;
+
+        // 1. 初始化模型引擎
+        const pose = new Pose({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+        });
+
+        pose.setOptions({
+            modelComplexity: 1,
+            smoothLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        pose.initialize().then(() => {
+            isEngineReady = true;
+            statusDot.classList.add('active');
+            statusText.innerText = "MediaPipe 视觉计算底座就绪";
+            statusText.style.color = "#52c41a";
+        }).catch(err => {
+            statusText.innerText = "模型加载失败: " + err;
+            statusText.style.color = "#ff4d4f";
+        });
+
+        // 2. 核心渲染回调：无历史连线，只标定当前帧
+        pose.onResults((results) => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+            if (results.poseLandmarks) {
+                // 实时压入高精运动学宽表数据集
+                const currentSnapshot = {
+                    frame: capturedDataset.length,
+                    timestamp: video.currentTime.toFixed(3),
+                    landmarks: results.poseLandmarks.map(pt => ({
+                        x: pt.x.toFixed(6),
+                        y: pt.y.toFixed(6),
+                        z: pt.z.toFixed(6),
+                        visibility: pt.visibility.toFixed(4)
+                    }))
+                };
+                capturedDataset.push(currentSnapshot);
+
+                // 实时刷新面板计数器
+                frameCountEl.innerText = capturedDataset.length;
+                if (capturedDataset.length > 0) downloadCsvBtn.disabled = false;
+
+                // 纯粹的当前帧骨架高亮标定
+                drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#4facfe', lineWidth: 3 });
+                drawLandmarks(ctx, results.poseLandmarks, { color: '#00e676', lineWidth: 1, radius: 4 });
+            }
+        });
+
+        // 3. 【加装互斥锁】安全受控的数据流泵送管线
+        async function safeFramePipeline() {
+            // 如果视频暂停、结束，立刻安全退出循环
+            if (video.paused || video.ended) {
+                animationFrameId = null;
+                return;
+            }
+
+            // 互斥闸门：只有引擎就绪、且上一帧完全计算释放后，才允许送入下一帧
+            if (isEngineReady && !isProcessing && video.videoWidth > 0) {
+                // 动态拉伸对齐画布尺寸，彻底根治时序塌陷
+                if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                }
+
+                isProcessing = true; // 上锁
+                try {
+                    await pose.send({ image: video }); // 强制等待 AI 线程完全解算完毕
+                } catch (err) {
+                    console.log("解算略过:", err);
+                } finally {
+                    isProcessing = false; // 释放锁
+                }
+            }
+
+            // 安全迭代到下一帧
+            animationFrameId = requestAnimationFrame(safeFramePipeline);
+        }
+
+        // 4. 监听视频播放状态，精准驱动管线点火
+        video.addEventListener('play', () => {
+            if (!animationFrameId) {
+                animationFrameId = requestAnimationFrame(safeFramePipeline);
+            }
+        });
+
+        // 5. 视频文件无条件安全点火挂载
+        document.getElementById('videoUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            resetDataset();
+
+            const videoUrl = URL.createObjectURL(file);
+            video.src = videoUrl;
+            
+            placeholder.style.display = 'none';
+            viewportContainer.style.display = 'flex'; // 切换为弹性居中容器
+
+            // 无论任何浏览器环境，直接执行强启点火
+            video.play().catch(err => {
+                console.log("等待首帧唤醒:", err);
+            });
+        });
+
+        // 6. CSV 数据流式打包下载（标准 134 列多模态数据宽表）
+        downloadCsvBtn.addEventListener('click', () => {
+            if (capturedDataset.length === 0) return;
+
+            let csvRows = [];
+            let header = ['Frame_Index', 'Timestamp_Seconds'];
+            for(let i = 0; i < 33; i++) {
+                header.push(`P${i}_X`, `P${i}_Y`, `P${i}_Z`, `P${i}_Visibility`);
+            }
+            csvRows.push(header.join(','));
+
+            capturedDataset.forEach(row => {
+                let rowData = [row.frame, row.timestamp];
+                row.landmarks.forEach(pt => {
+                    rowData.push(pt.x, pt.y, pt.z, pt.visibility);
+                });
+                csvRows.push(rowData.join(','));
+            });
+
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const downloadUrl = URL.createObjectURL(blob);
+            const triggerLink = document.createElement("a");
+            triggerLink.setAttribute("href", downloadUrl);
+            triggerLink.setAttribute("download", `motion_analytics_${Date.now()}.csv`);
+            triggerLink.style.visibility = 'hidden';
+            document.body.appendChild(triggerLink);
+            triggerLink.click();
+            document.body.removeChild(triggerLink);
+        });
+
+        function resetDataset() {
+            capturedDataset = [];
+            frameCountEl.innerText = '0';
+            downloadCsvBtn.disabled = true;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            isProcessing = false;
+        }
+
+        clearDataBtn.addEventListener('click', resetDataset);
+    </script>
+</body>
+</html>
