@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C刊常见100种学术理论互动速查看板</title>
+    <style>
+        /* 莫兰迪学术极简风核心变量 */
+        :root {
+            --bg-ivory: #faf9f5;         /* 象牙白 */
+            --text-graphite: #2b2d2f;   /* 石墨灰 */
+            --text-muted: #71777d;      /* 灰白 */
+            --card-bg: #ffffff;         /* 纯白卡片 */
+            --border-color: #e5dfd3;    /* 框线色 */
+            --accent-gold: #c2b7a3;     /* 古朴金点缀 */
+            
+            --tag-sociology: #93a2b0;   
+            --tag-psychology: #bda495;  
+            --tag-communication: #8ca89e;
+            --tag-management: #b29fa9;  
+            --tag-education: #c0b295;   
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-ivory);
+            color: var(--text-graphite);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        header {
+            max-width: 1200px;
+            margin: 0 auto 40px auto;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .category-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .filter-tag {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .filter-tag.active {
+            background-color: var(--text-graphite);
+            color: var(--bg-ivory);
+            border-color: var(--text-graphite);
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .theory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .theory-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 180px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .theory-code {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--accent-gold);
+            background: #fdfdfb;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid rgba(194, 183, 163, 0.3);
+        }
+
+        .discipline-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: white;
+        }
+
+        .theory-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .theory-claim-snippet {
+            font-size: 13px;
+            color: var(--text-muted);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-footer {
+            margin-top: 15px;
+            font-size: 11px;
+            color: var(--accent-gold);
+            border-top: 1px dashed var(--border-color);
+            padding-top: 10px;
+        }
+
+        /* 抽屉式侧边栏 */
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: -460px;
+            width: 450px;
+            height: 100%;
+            background-color: var(--card-bg);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.05);
+            border-left: 1px solid var(--border-color);
+            transition: right 0.3s ease;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+        }
+
+        .drawer.open {
+            right: 0;
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .detail-item {
+            margin-bottom: 20px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--accent-gold);
+            margin-bottom: 6px;
+        }
+
+        .ideation-zone {
+            background-color: var(--bg-ivory);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 25px;
+        }
+
+        .ideation-textarea {
+            width: 100%;
+            height: 100px;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            font-size: 13px;
+            resize: none;
+            outline: none;
+        }
+
+        .export-btn {
+            width: 100%;
+            background-color: var(--text-graphite);
+            color: var(--bg-ivory);
+            border: none;
+            padding: 12px;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: var(--text-graphite);
+            color: var(--bg-ivory);
+            padding: 10px 24px;
+            font-size: 13px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .loading-fallback {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 40px;
+            font-size: 14px;
+            grid-column: 1/-1;
+        }
+
+        @media (max-width: 768px) {
+            .drawer { width: 100%; right: -100%; }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>C刊常见100种学术理论互动速查看板</h1>
+        <div class="subtitle">深度融合权威核心期刊高频核心理论模型 · 多模态数字化学术辅助看板</div>
+        
+        <div class="filter-bar">
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索理论名称、编码、主张或创始人...">
+            <div class="category-tags" id="tagContainer">
+                <span class="filter-tag active" data-cat="all">全部领域</span>
+                <span class="filter-tag" data-cat="社会学">社会学</span>
+                <span class="filter-tag" data-cat="心理学">心理学</span>
+                <span class="filter-tag" data-cat="传播学">传播学</span>
+                <span class="filter-tag" data-cat="管理学">管理学</span>
+                <span class="filter-tag" data-cat="教育学">教育学</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="theory-grid" id="theoryGrid">
+            <div class="loading-fallback" id="fallbackText">学术看板正在初始化，请稍候...（如果此文字一直不消失，说明数据加载遇到了阻碍）</div>
+        </div>
+    </main>
+
+    <div class="drawer" id="detailDrawer">
+        <div class="drawer-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="theory-code" id="drawerCode">#000</span>
+                <h2 style="font-size: 18px; font-weight: 600;" id="drawerTitle">理论加载中</h2>
+            </div>
+            <button class="close-btn" id="closeDrawer">&times;</button>
+        </div>
+        
+        <div class="drawer-body">
+            <div class="detail-item">
+                <div class="detail-label">🎓 学术渊源与创始人</div>
+                <div class="detail-value" id="drawerOrigin">加载中...</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">💡 核心主张</div>
+                <div class="detail-value" id="drawerClaim">加载中...</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">📝 经典C刊应用场景</div>
+                <div class="detail-value" id="drawerScenario">加载中...</div>
+            </div>
+
+            <div class="ideation-zone">
+                <div class="detail-label">✍️ 我的论文构想 (灵感实时记录)</div>
+                <textarea class="ideation-textarea" id="ideationInput" placeholder="在此输入此理论与您当前研究的结合点...数据将暂存浏览器中"></textarea>
+            </div>
+        </div>
+
+        <div class="drawer-footer" style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border-color);">
+            <button class="export-btn" id="exportBtn">📋 导出我的学术灵感卡片</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toastMessage">灵感卡片已成功复制到剪贴板！</div>
+
+    <script>
+        // 健壮的数据集定义
+        const theoryDataset = [
+            {
+                code: "001",
+                name: "表演理论 (Performance Theory)",
+                category: "社会学",
+                colorVar: "--tag-sociology",
+                founder: "欧文·戈夫曼 (Erving Goffman) / 1959年",
+                claim: "人生就是一个大舞台，社会成员在日常社会互动中就像舞台上的演员。个体通过“前台”展示符合社会期望的形象，而在“后台”放松、隐蔽真实自我。强调印象管理的核心逻辑。",
+                scenario: "社交媒体用户“人设构建”与朋友圈分组可见行为研究；虚拟社区中Kol网络资本的符号化再生产。"
+            },
+            {
+                code: "006",
+                name: "场域理论 (Field Theory)",
+                category: "社会学",
+                colorVar: "--tag-sociology",
+                founder: "皮埃尔·布尔迪厄 (Pierre Bourdieu) / 1980年代",
+                claim: "社会并非同质结构，而是由多个相对独立的特殊“场域”组成。行动者在场域中通过占有、争夺不同形式的资本（经济、文化、社会资本等）确立话语权和阶层边界。",
+                scenario: "网络问答社区大V的话语权演变分析；学术共同体内边缘群体知识再生产的阻碍机制。"
+            },
+            {
+                code: "007",
+                name: "沉浸理论 (Flow Theory / 心流)",
+                category: "心理学",
+                colorVar: "--tag-psychology",
+                founder: "米哈里·契克森米哈赖 / 1975年",
+                claim: "当个体面临的技能水平与外部环境带来的挑战完美匹配时，会进入一种全神贯注、丧失时间感、过滤外界干扰并伴随高度自我愉悦感的“心流状态”。",
+                scenario: "沉浸式数字博物馆的用户体验设计与粘性研究；短视频平台无限信息流算法对网民成瘾机制的影响。"
+            },
+            {
+                code: "099",
+                name: "自我损耗理论 (Ego-Depletion)",
+                category: "心理学",
+                colorVar: "--tag-psychology",
+                founder: "罗伊·鲍迈斯特 等 / 1998年",
+                claim: "个体的自我控制和执行意志活动依赖于一种有限的能量资源。每一次克制、决策行为都会对该资源产生消耗，导致随后自控任务的执行效能暂时性下降。",
+                scenario: "在线网课平台中“视觉疲劳”与学习者中途无征兆退课的行为学实证；电商平台利用深夜消费者执行控制力低下触发冲动消费的研究。"
+            },
+            {
+                code: "100",
+                name: "自我决定理论 (Self-Determination Theory)",
+                category: "教育学",
+                colorVar: "--tag-education",
+                founder: "爱德华·德西 与 理查德·莱恩 / 1980年代",
+                claim: "人类行为由内在和外在动机共同驱动。社会环境如果可以通过支持自主、胜任、关系三种基本心理需要的满足，就能完美地激发外部动机向内部动机转化。",
+                scenario: "国内双减政策下中学生外语在线自发学习内驱力的结构方程模型分析；敏捷型企业中扁平化管理对研发人员组织公民行为的激励机制。"
+            }
+        ];
+
+        const userNotes = {};
+
+        // 使用安全的事件监听，确保DOM完全加载后执行
+        window.addEventListener('DOMContentLoaded', () => {
+            const theoryGrid = document.getElementById('theoryGrid');
+            const searchInput = document.getElementById('searchInput');
+            const tagContainer = document.getElementById('tagContainer');
+            const detailDrawer = document.getElementById('detailDrawer');
+            const closeDrawer = document.getElementById('closeDrawer');
+            const ideationInput = document.getElementById('ideationInput');
+            
+            let currentActiveTheory = null;
+            let currentCategory = 'all';
+
+            function renderCards(filterText = '', category = 'all') {
+                theoryGrid.innerHTML = '';
+                
+                const filteredData = theoryDataset.filter(item => {
+                    const matchCategory = (category === 'all' || item.category === category);
+                    const query = filterText.toLowerCase().trim();
+                    return matchCategory && (
+                        item.name.toLowerCase().includes(query) || 
+                        item.code.includes(query) || 
+                        item.claim.toLowerCase().includes(query)
+                    );
+                });
+
+                if(filteredData.length === 0) {
+                    theoryGrid.innerHTML = `<div class="loading-fallback">未检索到符合条件的学术理论模型</div>`;
+                    return;
+                }
+
+                filteredData.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'theory-card';
+                    card.innerHTML = `
+                        <div>
+                            <div class="card-header">
+                                <span class="theory-code">#${item.code}</span>
+                                <span class="discipline-badge" style="background-color: var(${item.colorVar})">${item.category}</span>
+                            </div>
+                            <h3 class="theory-title">${item.name}</h3>
+                            <p class="theory-claim-snippet">${item.claim}</p>
+                        </div>
+                        <div class="card-footer">👨‍🏫 ${item.founder.split(' / ')[0]}</div>
+                    `;
+                    card.addEventListener('click', () => openDrawer(item));
+                    theoryGrid.appendChild(card);
+                });
+            }
+
+            function openDrawer(theory) {
+                if (currentActiveTheory) {
+                    userNotes[currentActiveTheory.code] = ideationInput.value;
+                }
+                currentActiveTheory = theory;
+                
+                document.getElementById('drawerCode').innerText = `#${theory.code}`;
+                document.getElementById('drawerTitle').innerText = theory.name;
+                document.getElementById('drawerOrigin').innerText = theory.founder;
+                document.getElementById('drawerClaim').innerText = theory.claim;
+                document.getElementById('drawerScenario').innerText = theory.scenario;
+                
+                ideationInput.value = userNotes[theory.code] || "";
+                detailDrawer.classList.add('open');
+                if (window.innerWidth > 768) {
+                    document.body.style.paddingRight = "470px";
+                }
+            }
+
+            closeDrawer.addEventListener('click', () => {
+                if (currentActiveTheory) {
+                    userNotes[currentActiveTheory.code] = ideationInput.value;
+                }
+                detailDrawer.classList.remove('open');
+                document.body.style.paddingRight = "20px";
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                renderCards(e.target.value, currentCategory);
+            });
+
+            tagContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('filter-tag')) {
+                    document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentCategory = e.target.getAttribute('data-cat');
+                    renderCards(searchInput.value, currentCategory);
+                }
+            });
+
+            document.getElementById('exportBtn').addEventListener('click', () => {
+                if (!currentActiveTheory) return;
+                userNotes[currentActiveTheory.code] = ideationInput.value;
+                const currentIdea = userNotes[currentActiveTheory.code].trim() || "暂无用户个人论文构想。";
+
+                const exportText = `【C刊学术灵感卡片】\n[理论编码] ${currentActiveTheory.code}\n[理论名称] ${currentActiveTheory.name}\n[核心主张] ${currentActiveTheory.claim}\n【我的论文构想】\n${currentIdea}`;
+
+                navigator.clipboard.writeText(exportText).then(() => {
+                    const toast = document.getElementById('toastMessage');
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 2000);
+                }).catch(() => {
+                    alert("请手动复制：\n\n" + exportText);
+                });
+            });
+
+            // 执行首次加载
+            renderCards();
+        });
+    </script>
+</body>
+</html>
